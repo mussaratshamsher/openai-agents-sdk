@@ -1,0 +1,11 @@
+
+
+.stApp {
+    background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7); /* Soft pastel colors */
+    background-size: 400% 400%; 
+    animation: gradientShift 10s ease infinite;
+     background: linear-gradient(45deg, #3a227c, #2f732f);
+     box-shadow: 0 0 10px rgb(232, 231, 231),
+                    0 0 20px rgb(232, 231, 231), 
+                    inset 0 0 10px rgb(232, 231, 231);
+}

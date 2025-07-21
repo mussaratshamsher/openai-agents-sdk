@@ -1,0 +1,12 @@
+
+
+
+.stApp {
+    padding: 0px;
+    margin: 0px;
+    background-image: linear-gradient(rgb(32, 32, 32),rgb(249, 164, 164),rgb(194, 184, 249));
+    background-size: cover;
+    background-position: center;
+    color: white! important;
+   
+    }
