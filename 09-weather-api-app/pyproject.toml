@@ -1,13 +1,12 @@
 [project]
-name = "09-weather-app"
+name = "09-weather-api-app"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "openai-agents>=0.0.19",
+    "openai-agents>=0.2.3",
     "plotly>=6.2.0",
-    "python-dotenv>=1.1.0",
-    "requests>=2.32.4",
-    "streamlit>=1.46.0",
+    "python-dotenv>=1.1.1",
+    "streamlit>=1.47.0",
 ]

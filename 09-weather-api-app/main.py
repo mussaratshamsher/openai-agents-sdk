@@ -145,6 +145,7 @@ st.markdown(
                 0 0 40px rgb(232, 231, 231);
         }
         .stSidebar {
+            margin-top: 58px;
             background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7);
             background-size: 400% 400%;
             animation: gradientShift 10s ease infinite;
