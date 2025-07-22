@@ -1,33 +1,55 @@
-
-#weather app using weather api and agnets function tool
+# weather_app.py
+import pydeck as pdk 
 import os
 import requests
 import asyncio
 import streamlit as st
+import pandas as pd
+import plotly.express as px
 from dotenv import load_dotenv
-from agents import Agent, AsyncOpenAI, OpenAIChatCompletionsModel, Runner, RunConfig
+from agents import Agent, AsyncOpenAI, OpenAIChatCompletionsModel, Runner
 from agents.tool import function_tool
+from io import StringIO
+import base64
 
 # Load environment variables
 load_dotenv()
-set_tracing_disabled=True
 
-# Define weather tool
+# --- Tool Function ---
 @function_tool
 def get_weather(city: str) -> str:
     """Fetches the current weather for a given city."""
     try:
         response = requests.get(
-            f"http://api.weatherapi.com/v1/current.json?key=8e3aca2b91dc4342a1162608252604&q={city}",
-            timeout=2
+            f"http://api.weatherapi.com/v1/forecast.json?key=8e3aca2b91dc4342a1162608252604&q={city}&days=7&aqi=no&alerts=no",
+            timeout=3
         )
         response.raise_for_status()
         data = response.json()
-        return f"The current weather in {city} is {data['current']['temp_c']}°C with {data['current']['condition']['text']}."
+        current = data['current']
+        return f"The current weather in {city} is {current['temp_c']}°C with {current['condition']['text']}."
     except Exception:
         return f"Sorry, I couldn't fetch the weather data for {city}. Please try again later."
 
-# Initialize agent
+@st.cache_data(ttl=600)
+def fetch_weather_data(city):
+    try:
+        res = requests.get(
+            f"http://api.weatherapi.com/v1/forecast.json?key=8e3aca2b91dc4342a1162608252604&q={city}&days=7&aqi=no&alerts=no",
+            timeout=3
+        )
+        res.raise_for_status()
+        forecast_data = res.json()
+        return forecast_data['forecast']['forecastday'], forecast_data['location'], forecast_data['current']
+    except Exception:
+        return [], {}, {}
+
+def download_weather_details(text, filename="weather_report.txt"):
+    b64 = base64.b64encode(text.encode()).decode()
+    href = f'<a href="data:file/txt;base64,{b64}" download="{filename}">📥 Download Weather Report</a>'
+    return href
+
+# --- Agent Initialization ---
 @st.cache_resource
 def init_agent():
     MODEL_NAME = "gemini-2.0-flash"
@@ -36,155 +58,139 @@ def init_agent():
     external_client = AsyncOpenAI(
         api_key=API_KEY, base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
+    model = OpenAIChatCompletionsModel(model=MODEL_NAME, openai_client=external_client)
 
-    model = OpenAIChatCompletionsModel( model=MODEL_NAME, openai_client=external_client
-    )
-
-    config = RunConfig( model=model, model_provider=external_client, tracing_disabled=True
-    )
-
-    assistant = Agent(
+    return Agent(
         name="Weather Assistant",
-        instructions="You are a helpful assistant who answers weather-related questions using tools.",
-        model=model, tools=[get_weather]
+        instructions="You are a helpful assistant who gives weather-related advice for the day.",
+        model=model,
+        tools=[get_weather]
     )
 
-    return assistant
-
-# App UI
+# --- UI Setup ---
 st.set_page_config(page_title="Weather Assistant", page_icon="⛅")
-st.title("🌦️ Weather Assistant")
-st.markdown("Ask about the weather in any city. Powered by `openai-agent` SDK.")
-
-st.markdown(
-    """
-    <style>               
+st.markdown("""
+    <style>
         .stApp {
-            background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7); /* Soft pastel colors */
-            background-size: 400% 400%; 
-            animation: gradientShift 10s ease infinite;
+             background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7);
         }
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-        /* Keyframes animation for the button */
-        @keyframes pulse {  
-            0% { box-shadow: 0 0 10px rgba(255, 87, 34, 0.7); }  
-            50% { box-shadow: 0 0 20px rgba(255, 87, 34, 1); }  
-            100% { box-shadow: 0 0 10px rgba(255, 87, 34, 0.7); }  
-        }  
-        /* Styling for the custom pulse button */
-        .pulse-button {  
-            display: block;  
-            width: 100%;  
-            text-align: center;  
-            background: linear-gradient(45deg, #160646, #038203);  
-            color: white;  
-            font-size: 18px;  
-            font-weight: bold;  
-            padding: 12px;  
-            margin: 10px 0;  
-            border-radius: 8px;  
-            text-decoration: none;  
-            transition: all 0.3s ease-in-out;  
-            animation: pulse 1.5s infinite;  
-        }  
-        /* Custom styling for streamlit's button */
         .stButton > button {
             background: linear-gradient(45deg, #038203, #160646);
-            width: 100%;
-            text-align: center;
-            display: block;
             color: white;
+            width: 100%;
             font-size: 18px;
             font-weight: bold;
             padding: 12px;
             margin: 10px 0;
             border-radius: 8px;
-            border: transparent;
-            box-shadow: 
-                0 0 10px rgb(232, 231, 231),
-                0 0 20px rgb(232, 231, 231);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease-in-out;
-        }
-        /* Animation for the moving border */
-        .stButton > button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 90%;
-            height: 100%;
-            color: transparent;
-            border: 3px solid #FFC107;
-            border-radius: 50%;
-            transition: all 0.3s ease-in-out;
-            transform: scale(0);
-        }
-        .stButton > button:hover {
-            color: white;
-            font: bold;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            transition: all 0.3s ease-in-out;
-            background: linear-gradient(45deg, #3a227c, #2f732f);
-            box-shadow: 
-                0 0 10px rgb(232, 231, 231),
-                0 0 20px rgb(232, 231, 231), 
-                0 0 40px rgb(232, 231, 231);
         }
         .stSidebar {
             margin-top: 58px;
             background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7);
-            background-size: 400% 400%;
-            animation: gradientShift 10s ease infinite;
+        }
+        .stAlert {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-left: 5px solid #28a745;
+        border-radius: 10px;
+        shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        padding: 10px;
+        font-size: 20px;
+        color: white !important;
+    }
+    .stAlert p {
+        color: white !important;
+    }
+        .weather-column {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.15);
         }
     </style>
-    """, 
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
-# Sidebar input
+# --- Header ---
+st.title("🌦️ Weather Assistant")
+st.markdown("Get the current weather and forecast for your favorite city.")
+
+# --- Sidebar ---
 with st.sidebar:
-    city_input = st.text_input("Enter city name", value="Karachi", help="Type a city to check its weather")
-    ask_button = st.button("Check Weather 🌍")
+    city_input = st.text_input("📍 Enter city name", value="Karachi")
+    ask_button = st.button("🔍 Check Weather")
+    show_hourly = st.checkbox("🕒 Show hourly forecast")
+    unit = st.radio("🌡️ Temperature Unit", ["Celsius", "Fahrenheit"])
 
-# Session state to hold conversation history
-if "history" not in st.session_state:
-    st.session_state["history"] = []
-
-# Handle button click
+# --- Main Logic ---
 if ask_button:
     st.snow()
-    question = f"What is the weather in {city_input}?"
-    st.session_state["history"].append({"role": "user", "content": question})
-
     assistant = init_agent()
+    question = f"What is the weather in {city_input}?"
 
-    with st.spinner("Thinking..."):
-        result = asyncio.run(Runner.run(
-            starting_agent=assistant,
-            input=st.session_state["history"]
-        ))
+    with st.spinner("⛅ Fetching weather details..."):
+        result = asyncio.run(Runner.run(starting_agent=assistant, input=[{"role": "user", "content": question}]))
 
-    st.session_state["history"].append({"role": "assistant", "content": result.final_output})
     st.success(result.final_output)
+    st.markdown(download_weather_details(result.final_output), unsafe_allow_html=True)
 
-# Show full conversation (optional)
-if st.checkbox("Show full conversation history"):
-    for msg in st.session_state["history"]:
-        if msg["role"] == "user":
-            st.markdown(f"🧑‍💬 **You:** {msg['content']}")
-        else:
-            st.markdown(f"🤖 **Assistant:** {msg['content']}")
+# --- Forecast Section ---
+if city_input:
+    daily_data, location_data, current_weather = fetch_weather_data(city_input)
+
+    if current_weather:
+        st.subheader("🌞 Current Weather")
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            st.image("https:" + current_weather['condition']['icon'], width=80)
+        with col2:
+            st.markdown(f"### {current_weather['condition']['text']}")
+            temp = current_weather['temp_c'] if unit == "Celsius" else (current_weather['temp_c'] * 9/5) + 32
+            st.markdown(f"**Temperature:** {temp:.1f}°{unit[0]}")
+            st.markdown(f"**Wind Speed:** {current_weather['wind_kph']} kph")
+            st.markdown(f"**Feels Like:** {current_weather['feelslike_c']}°C")
+
+        st.subheader("💡 Tips for Today")
+        st.markdown("""
+        - 🥤 Stay hydrated if it's hot.
+        - ☔ Carry an umbrella if rain is expected.
+        - 🧴 Use sunscreen on sunny days.
+        - 🧥 Wear warm clothes if it's cold.
+        - 🌫️ Check air quality before heading out if you’re sensitive.
+        """)
+
+    if daily_data:
+        if show_hourly:
+            st.subheader("🕒 Hourly Weather Forecast")
+            hours_df = pd.DataFrame(daily_data[0]['hour'])
+            hours_df['time'] = pd.to_datetime(hours_df['time']).dt.strftime('%I:%M %p')
+            hours_df['temp'] = hours_df['temp_c'] if unit == "Celsius" else (hours_df['temp_c'] * 9/5) + 32
+
+            fig = px.line(hours_df, x='time', y='temp', title='Hourly Temperature', markers=True)
+            fig.update_traces(line=dict(color='skyblue'), marker=dict(size=6))
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Map Section
+            st.subheader("🌍 Location on Map")           
+            lat, lon = location_data.get("lat"), location_data.get("lon")
+            if lat and lon:
+                st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}), zoom=10)
+          
+            # Next, display the 3-day forecast
+        st.subheader("📆 3-Day Weather Forecast")
+        columns = st.columns(3, gap="small")
+        for i in range(min(3, len(daily_data))):
+            day = daily_data[i]
+            date = day['date']
+            condition = day['day']['condition']['text']
+            icon_url = "https:" + day['day']['condition']['icon']
+            max_temp = day['day']['maxtemp_c'] if unit == "Celsius" else (day['day']['maxtemp_c'] * 9/5) + 32
+            min_temp = day['day']['mintemp_c'] if unit == "Celsius" else (day['day']['mintemp_c'] * 9/5) + 32
+            wind = day['day']['maxwind_kph']
+
+            with columns[i]:
+                st.markdown(f"**{date}**")
+                st.image(icon_url, width=48)
+                st.markdown(f"{condition}")
+                st.markdown(f"🌡️ {max_temp:.1f}° / {min_temp:.1f}°")
+                st.markdown(f"💨 {wind} kph")
+                st.markdown(f"**Humidity:** {day['day']['avghumidity']}%")
+                st.markdown(f"**Rain Chance:** {day['day']['daily_chance_of_rain']}%")
