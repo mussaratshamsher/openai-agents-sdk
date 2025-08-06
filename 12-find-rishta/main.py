@@ -76,7 +76,7 @@ async def run_agent(user_history):
 # Streamlit UI
 st.set_page_config(page_title="💘 Rishty Wali")
 st.title("💘 Rishty Wali - Matchmaker Agent")
-st.markdown("👋 Welcome! Enter your matchmaking query (e.g., 'Find females aged 24 and above')")
+st.markdown("👋 Welcome! Enter your query & whatsapp to receive details (e.g.'Find females aged 24 and above & send details on +928978643234')")
 
 if "history" not in st.session_state:
     st.session_state.history = []
