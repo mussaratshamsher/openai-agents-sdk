@@ -37,10 +37,7 @@ def get_user_data(min_age: int, desired_gender: str) -> list[dict]:
         {"name": "Noor Fatima", "age": 24, "gender": "female", "home": "Quetta", "work": "Pharmacist", "phone": "+923007777777"},
         {"name": "Ahmed Hassan", "age": 29, "gender": "male", "home": "Sialkot", "work": "Marketing Manager", "phone": "+923008888888"}
     ]
-    return [
-        user for user in users
-        if user["age"] >= min_age and user["gender"].lower() == desired_gender.lower()
-    ]
+    return [user for user in users if user["age"] >= min_age and user["gender"].lower() == desired_gender.lower()]
 
 @function_tool
 def send_whatsapp_message(phone: str, message: str) -> str:
@@ -71,7 +68,7 @@ assistant = Agent(
     tools=[get_user_data, send_whatsapp_message]
 )
 
-# Async wrapper to handle agent runner
+# Async wrapper
 async def run_agent(user_history):
     result = await Runner.run(starting_agent=assistant, input=user_history)
     return result.final_output
@@ -79,26 +76,35 @@ async def run_agent(user_history):
 # Streamlit UI
 st.set_page_config(page_title="💘 Rishty Wali")
 st.title("💘 Rishty Wali - Matchmaker Agent")
+st.markdown("👋 Welcome! Enter your matchmaking query (e.g., 'Find females aged 24 and above')")
 
 if "history" not in st.session_state:
     st.session_state.history = []
 
 user_input = st.text_input("🔍 Enter your matchmaking query")
 
-if st.button("Find Match"):
+if st.button("🔎 Find Match"):
     st.session_state.history.append({"role": "user", "content": user_input})
-    try:
-        output = asyncio.run(run_agent(st.session_state.history))
-        st.session_state.history.append({"role": "assistant", "content": output})
-        st.success("✅ Match found!")
-        st.markdown(f"### 🗣️ Assistant Reply:\n{output}")
+    with st.spinner("🔍 Finding the best match..."):
+        try:
+            output = asyncio.run(run_agent(st.session_state.history))
+            st.session_state.history.append({"role": "assistant", "content": output})
+            st.success("✅ Match found!")
 
-        # WhatsApp sending section
-        with st.expander("📲 Send match info to WhatsApp"):
-            phone = st.text_input("📞 Enter WhatsApp number (e.g., +923001234567)")
-            if st.button("📤 Send via WhatsApp"):
-                message_result = send_whatsapp_message(phone, output)
-                st.info(message_result)
+            # Display output as markdown
+            st.markdown("### 🗣️ Assistant Reply")
+            st.markdown(f"```markdown\n{output}\n```")
 
-    except Exception as e:
-        st.error(f"❌ Error: {e}")
+            # Extract and display phone numbers with send button
+            st.markdown("### 📤 Send Match Info via WhatsApp")
+
+            lines = output.splitlines()
+            for line in lines:
+                if "Phone" in line or "phone" in line:
+                    phone = line.split(":")[-1].strip()
+                    if st.button(f"📱 Send to {phone}", key=phone):
+                        message_status = send_whatsapp_message(phone=phone, message=output)
+                        st.success(message_status)
+
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
