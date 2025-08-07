@@ -97,45 +97,47 @@ st.markdown(
     """
     <style>    
     .stApp {
-    padding: 0px;
-    margin: 0px;
-    background-image: linear-gradient(rgb(10, 11, 11),rgb(43, 42, 42),rgb(6, 131, 209));
-    background-size: cover;
-    background-position: center;
-    color: white! important;
+        background-image: linear-gradient(to bottom, #dfefff, #eaf6ff, #fefefe);
     }
-     .stSidebar .stSelectbox div {
-     color: rgb(89, 183, 241)! important;
-    }
-    .stTextArea textarea {
+    .stSidebar {
+        margin-top: 90px;
+        background-image: linear-gradient(to bottom, #dfefff, #eaf6ff, #fefefe);
+        background-size: cover;
+        background-position: center;
         color: white !important;
-        background-color: #333 !important;  
+    }
+    .stText {
+        color: black !important;
+        font-size: 18px;
     }
     .stButton>button {
-        background-image: linear-gradient(rgb(38, 186, 249),rgb(14, 13, 13),rgb(6, 131, 209));
-        color: white;
-        font-size: 18px;
+        background-image: linear-gradient(to right, #26baf9, #f4f1f1, #6dc2f7ce);
+        font-size: 24px;
+        font-weight: bold;
         padding: 12px 24px;
         border-radius: 50px;
         border: none;
         position: relative;
         overflow: hidden;
-        transition: background-color 0.4s ease, transform 0.3s ease;
+        transition: transform 0.3s ease;
+        z-index: 1;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6); /* Makes button text clearer */
     }
-    .stButton>button:before {
+
+    .stButton>button::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 300%;
-        height: 300%;
-        background: linear-gradient(rgb(38, 186, 249),rgb(14, 13, 13),rgb(6, 131, 209));
-        transform: rotate(45deg);
-        z-index: -1;
-        animation: wave 3s infinite;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(to right, #26baf9, #0e0d0d, #0683d1);
+        animation: wave 4s linear infinite;
         z-index: 0;
         border-radius: 50%;
+        opacity: 0.3;
     }
+
     .stButton>button:hover {
         transform: scale(1.05);
         color: white;
@@ -148,20 +150,11 @@ st.markdown(
             transform: translateX(-100%);
         }
     }
-    .stSidebar{
-    padding: 0px;
-    margin-top: 58px;
-    padding: 14px;
-   background-image: linear-gradient(rgb(10, 11, 11),rgb(43, 42, 42),rgb(6, 131, 209));
-    color: white! important;
-    }
-    .stText {
-            color: white! important;
-            font-size: 18px;
-        }
-        
     </style>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Sidebar for language selection
 selected_language = st.sidebar.selectbox(
