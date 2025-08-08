@@ -72,10 +72,10 @@ st.set_page_config(page_title="Weather Assistant", page_icon="⛅")
 st.markdown("""
     <style>
         .stApp {
-             background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7);
+              background: linear-gradient(45deg, #d7d6de, #b8f4cf, #edf1f1, #5fccf7);
         }
         .stButton > button {
-            background: linear-gradient(45deg, #038203, #160646);
+             background: linear-gradient(45deg, #398957, #417af4);
             color: white;
             width: 100%;
             font-size: 18px;
@@ -84,9 +84,12 @@ st.markdown("""
             margin: 10px 0;
             border-radius: 8px;
         }
+        .stButton > button:hover {
+         background: linear-gradient(45deg,  #417af4, #398957);
+         }
         .stSidebar {
             margin-top: 58px;
-            background: linear-gradient(45deg, #3e34c4, #9af4bd, #2f3581, #59f6b7);
+            background: linear-gradient(45deg, #d7d6de, #b8f4cf, #edf1f1, #5fccf7);
         }
         .stAlert {
         background-color: rgba(255, 255, 255, 0.05);
